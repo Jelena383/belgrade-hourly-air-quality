@@ -89,6 +89,16 @@ The web application presents the results of the study through:
 
 All values in the application are identical to the tables of the study.
 
+## Selected Maps
+
+| Poor+ share by monitoring site | Person-hours indicator (15 km radius) |
+|---|---|
+| <img src="figures/en/Figure_04_poor_plus_share_map.png" width="400"> | <img src="figures/en/Figure_14_person_hours_map.png" width="400"> |
+| **Dominant pollutant in Poor+ hours** | **Hourly burden calendar** |
+| <img src="figures/en/Figure_10_dominant_pollutant_map.png" width="400"> | <img src="figures/en/Figure_06_hourly_burden_calendar.png" width="400"> |
+
+All 16 figures of the study are available in English in [`figures/en`](figures/en) and in Serbian in [`figures/sr`](figures/sr). Maps were produced in QGIS; source of data: Belgrade City Institute of Public Health (GZJZ, 2025, 2026) and WorldPop R2025A (Bondarenko et al., 2025).
+
 ## Software and Methods
 
 **Data processing and statistics**
@@ -122,6 +132,8 @@ All values in the application are identical to the tables of the study.
 | `satni.js` | Hourly EAQI categories by monitoring site, 2024–2025 |
 | `podloga.js` | Base map (municipal boundaries and rivers) |
 | `leaflet.js`, `leaflet.css`, `images/` | Leaflet 1.9.4 (BSD-2-Clause, see `LICENSE-Leaflet.txt`) |
+| `figures/en/` | All 16 figures of the study (English) |
+| `figures/sr/` | All 16 figures of the study (Serbian) |
 
 ## Limitations
 
