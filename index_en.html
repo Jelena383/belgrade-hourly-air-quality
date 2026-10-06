@@ -1,0 +1,1248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Every Hour Matters</title>
+  <link rel="stylesheet" href="leaflet.css">
+  <style>
+    body {
+      margin: 0;
+      font-family: "Segoe UI", Roboto, Arial, sans-serif;
+      color: #222222;
+      background: #ffffff;
+    }
+    .stranica {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 24px 20px;
+    }
+
+    #karta { height: 600px; background: #ffffff; border: 1px solid #dddddd; }
+
+    h1 { margin: 0 0 4px 0; font-size: 34px; }
+    h2 { font-size: 24px; margin-bottom: 8px; }
+    .jezik { text-align: right; margin: 0; font-size: 14px; }
+    .podnaslov-rada { font-size: 18px; color: #444444; max-width: 750px; line-height: 1.4; margin: 0 0 16px 0; }
+    .uvod { max-width: 750px; line-height: 1.5; margin-bottom: 16px; }
+    .uputnica {
+      max-width: 750px;
+      background: #eef2f7;
+      border-left: 4px solid #6f8faf;
+      padding: 10px 14px;
+      margin-bottom: 20px;
+      line-height: 1.5;
+    }
+
+    .leaflet-tooltip.naziv-opstine {
+      background: none;
+      border: none;
+      box-shadow: none;
+      color: #777777;
+      font-size: 12px;
+      pointer-events: none;
+    }
+    .leaflet-tooltip.naziv-opstine::before { display: none; }
+
+    .sitno .centralna { display: none; }
+
+    .prozorcic h3 { margin: 0 0 6px 0; font-size: 15px; }
+    .prozorcic table { border-collapse: collapse; }
+    .prozorcic td { padding: 2px 8px 2px 0; }
+    .prozorcic td.vrednost { font-weight: bold; text-align: right; }
+
+    .dugmad { margin: 0 0 10px 0; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+    .dugmad button, .kontrole button, .kontrole input {
+      font-family: inherit;
+      font-size: 14px;
+      padding: 6px 12px;
+      border: 1px solid #888888;
+      background: white;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .dugmad button.aktivno {
+      background: #333333;
+      color: white;
+      border-color: #333333;
+    }
+    .prekidac { font-size: 14px; margin-left: 12px; cursor: pointer; }
+
+    .legenda {
+      background: white;
+      padding: 8px 10px;
+      border-radius: 4px;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+      font-size: 12px;
+      max-width: 220px;
+    }
+    .legenda .traka, .traka-kalendar {
+      width: 160px;
+      height: 12px;
+      margin: 4px 0;
+      background: linear-gradient(to right, #ffffb2, #fecc5c, #fd8d3c, #f03b20, #bd0026);
+    }
+    .legenda .krajevi, .krajevi-kalendar { display: flex; justify-content: space-between; width: 160px; }
+    .legenda .stavka { margin-top: 4px; }
+    .legenda .kruzic {
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      border: 1px solid #333333;
+      margin-right: 6px;
+      vertical-align: middle;
+    }
+
+    .odeljak { margin-top: 48px; }
+    .odeljak p, .odeljak li { max-width: 750px; line-height: 1.5; }
+    .odeljak li { margin-bottom: 6px; }
+    .omotac-tabele { overflow-x: auto; }
+    #kalendar { border-collapse: collapse; font-size: 11px; width: 100%; min-width: 800px; }
+    #kalendar th { font-weight: normal; color: #555555; padding: 2px 4px; }
+    #kalendar td {
+      height: 28px;
+      text-align: center;
+      border: 1px solid white;
+    }
+    #kalendar th.mesec { text-align: right; padding-right: 8px; width: 40px; }
+    .legenda-kalendar { font-size: 12px; margin-top: 10px; }
+
+    .vreme { font-size: 20px; font-weight: 600; margin: 8px 0 10px 0; }
+    .kontrole { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-bottom: 10px; }
+    .kontrole button.pusti { background: #333333; color: white; border-color: #333333; min-width: 90px; }
+    #klizac { width: 100%; margin: 4px 0 10px 0; }
+    #karta-sat { height: 520px; background: #ffffff; border: 1px solid #dddddd; }
+    #sazetak-sata { margin-top: 10px; font-size: 15px; }
+    .izbor-parametra { margin: 4px 0 12px 0; font-size: 15px; }
+    .izbor-parametra select { font-family: inherit; font-size: 15px; padding: 4px 8px; margin-left: 6px; }
+    .legenda-eaqi span.prazan {
+      display: inline-block;
+      width: 11px;
+      height: 11px;
+      margin: 0 4px 0 12px;
+      vertical-align: middle;
+      border: 1px dashed #666666;
+      border-radius: 50%;
+    }
+    .legenda-eaqi { font-size: 12px; margin-top: 8px; }
+    .legenda-eaqi span.kvadrat {
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      margin: 0 4px 0 12px;
+      vertical-align: middle;
+      border: 1px solid #999999;
+    }
+
+    #izbor-lokacije { font-family: inherit; font-size: 14px; padding: 4px; margin-bottom: 12px; max-width: 100%; }
+    #stubici {
+      display: flex;
+      align-items: flex-end;
+      gap: 8px;
+      height: 260px;
+      border-bottom: 1px solid #888888;
+      padding-top: 20px;
+    }
+    .stubic-kolona {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      align-items: center;
+      height: 100%;
+    }
+    .stubic-vrednost { font-size: 12px; color: #333333; margin-bottom: 2px; }
+    .stubic { width: 100%; border-radius: 2px 2px 0 0; }
+    #nazivi-meseci { display: flex; gap: 8px; }
+    #nazivi-meseci span { flex: 1; text-align: center; font-size: 12px; color: #555555; padding-top: 4px; }
+    .legenda-sezona { font-size: 12px; margin-top: 10px; }
+    .legenda-sezona span.kvadrat, .legenda-polutanata span.kvadrat {
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      margin: 0 4px 0 12px;
+      vertical-align: middle;
+    }
+
+    h3.podnaslov { margin: 24px 0 8px 0; font-size: 16px; }
+    .legenda-polutanata { font-size: 12px; margin: 8px 0 4px 0; }
+
+    .red-sezone { display: flex; align-items: center; margin-bottom: 6px; }
+    .red-sezone .naziv { width: 70px; font-size: 13px; }
+    .traka-sezone { flex: 1; display: flex; height: 30px; }
+    .deo {
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 11px;
+      overflow: hidden;
+    }
+
+    #po-satu { display: flex; gap: 3px; height: 240px; }
+    .kolona-sata { flex: 1; display: flex; flex-direction: column-reverse; overflow: hidden; }
+    #sati-oznake { display: flex; gap: 3px; }
+    #sati-oznake span { flex: 1; text-align: center; font-size: 11px; color: #555555; padding-top: 4px; }
+    .napomena { font-size: 13px; color: #555555; }
+
+    .tabela-pokrivenost { border-collapse: collapse; font-size: 14px; margin: 8px 0 12px 0; }
+    .tabela-pokrivenost th, .tabela-pokrivenost td { padding: 6px 12px; border-bottom: 1px solid #dddddd; text-align: left; }
+    .tabela-pokrivenost td.broj, .tabela-pokrivenost th.broj { text-align: right; }
+
+    .nalazi, .vodic { max-width: 750px; margin-bottom: 20px; }
+    .nalazi h2, .vodic h2 { font-size: 20px; margin: 0 0 8px 0; }
+    .nalazi p, .nalazi li, .vodic li { line-height: 1.5; }
+    .nalazi li, .vodic li { margin-bottom: 6px; }
+    .vodic ol { padding-left: 22px; margin: 0; }
+
+    #traka-epizode {
+      display: none;
+      background: #fff4e6;
+      border-left: 4px solid #d55e00;
+      padding: 10px 14px;
+      margin: 0 0 10px 0;
+      line-height: 1.5;
+    }
+    #traka-epizode .dugmici-epizode { margin-top: 8px; display: flex; gap: 6px; flex-wrap: wrap; }
+    #traka-epizode button {
+      font-family: inherit;
+      font-size: 14px;
+      padding: 5px 12px;
+      border: 1px solid #888888;
+      background: white;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .dugmad-epizoda { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 8px 0; }
+    .dugmad-epizoda button {
+      font-family: inherit;
+      font-size: 14px;
+      padding: 6px 12px;
+      border: 1px solid #888888;
+      background: white;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .dugmad-epizoda button.aktivno { background: #333333; color: white; border-color: #333333; }
+    #opis-vrste-epizoda { margin: 0 0 10px 0; }
+
+    /* Vidljiv okvir pri kretanju tastaturom */
+    button:focus-visible, select:focus-visible, input:focus-visible, a:focus-visible {
+      outline: 3px solid #0072b2;
+      outline-offset: 2px;
+    }
+
+    .tabela-epizoda { border-collapse: collapse; font-size: 14px; width: 100%; min-width: 760px; }
+    .tabela-epizoda th, .tabela-epizoda td { padding: 5px 10px; border-bottom: 1px solid #e3e3e3; text-align: left; }
+    .tabela-epizoda th { font-weight: 600; color: #444444; }
+    .tabela-epizoda td.broj, .tabela-epizoda th.broj { text-align: right; }
+    .tabela-epizoda .stubac-broj { display: flex; align-items: center; gap: 8px; }
+    .tabela-epizoda .stubac-broj span.traka-epizoda { display: inline-block; height: 12px; background: #d55e00; border-radius: 2px; }
+    .tabela-epizoda button {
+      font-family: inherit;
+      font-size: 13px;
+      padding: 3px 10px;
+      border: 1px solid #888888;
+      background: white;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    footer { margin: 48px 0 8px 0; padding-top: 16px; border-top: 1px solid #dddddd; font-size: 13px; color: #555555; max-width: 750px; line-height: 1.5; }
+  </style>
+</head>
+<body>
+<main class="stranica">
+
+  <p class="jezik"><a href="index.html">Srpski</a></p>
+  <h1>Every Hour Matters</h1>
+  <p class="podnaslov-rada">An Hourly Spatio-Temporal Assessment of Air Quality, Dominant Pollutants, and Potential Population Burden in Belgrade, Serbia</p>
+
+  <p class="uvod">A retrospective analytical presentation of the results of an independent research study: hourly EAQI analysis at 27 automatic monitoring stations (AMS) of the local network of the Belgrade City Institute of Public Health (GZJZ) that carry out continuous fixed measurements in populated areas of the City of Belgrade, 2024–2025.</p>
+
+  <p class="uvod">These 27 AMS are the only measurement sites in the local network that provide the hourly data required for EAQI classification. The semi-automatic and indicative measurement sites of the local network, as well as the stations of the national network operated by SEPA, are not included. Throughout this presentation, “monitoring site” refers to one of these 27 AMS.</p>
+
+  <p class="uvod"><strong>Poor+</strong> denotes hours in which the air was in the EAQI category Poor, Very poor or Extremely poor. It is an operational group of categories defined in the study, not an official index category.</p>
+
+  <div class="uputnica">
+    This is not a view of current conditions, but a review of what happened during 2024 and 2025.
+    For current air quality, see the portal of the Serbian Environmental Protection Agency (SEPA):
+    <a href="https://vazduh.sepa.gov.rs/" target="_blank" rel="noopener noreferrer">vazduh.sepa.gov.rs</a>.
+  </div>
+
+  <div class="nalazi">
+    <h2>Key findings</h2>
+    <p>A single number does not tell the whole story: the mean PM2.5 concentration explains 27.9% of the variation in Poor+ share across the 27 monitoring sites, while hourly data reveal patterns that no single summary indicator can fully describe.</p>
+    <ul>
+      <li><strong>Three different rankings.</strong> AMS KCS Vračar, Franše Deperea has the highest Poor+ share, AMS Leštane the longest single episode (132 hours), and AMS JP Pošta Srbije the highest person-hours indicator.</li>
+      <li><strong>The pollutant changes with season and hour.</strong> PM2.5 prevails in winter and evening Poor+ hours, O3 in summer Poor+ hours and around midday.</li>
+      <li><strong>Coverage is high but uneven.</strong> 98.0% of the population lives within 15 km of one of the analyzed AMS, while the uncovered population is concentrated mainly in Obrenovac city municipality (86.6%).</li>
+    </ul>
+    <p class="napomena">Findings are taken from the conclusion of the study (Section 6).</p>
+  </div>
+
+  <div class="vodic">
+    <h2>How to read this presentation</h2>
+    <ol>
+      <li><a href="#odeljak-karta"><strong>Where?</strong></a> Map of the 27 AMS with Poor+ share, dominant pollutant and person-hours indicator.</li>
+      <li><a href="#odeljak-kalendar"><strong>When?</strong></a> Hourly burden calendar, seasonal pattern by monitoring site and the hour-by-hour view.</li>
+      <li><a href="#odeljak-polutant"><strong>What?</strong></a> Dominant pollutant in Poor+ hours, by season and hour of day.</li>
+      <li><a href="#odeljak-teret"><strong>How many people?</strong></a> Person-hours indicator and areas outside monitoring network coverage.</li>
+      <li><a href="#odeljak-epizode"><strong>How long?</strong></a> Duration of Poor+ episodes.</li>
+    </ol>
+  </div>
+
+  <div class="dugmad" id="odeljak-karta">
+    <button id="dugme-poor" onclick="prikazi('poor')">Poor+ share</button>
+    <button id="dugme-polutant" onclick="prikazi('polutant')">Dominant pollutant</button>
+    <button id="dugme-ph" onclick="prikazi('ph')">Person-hours indicator</button>
+    <label class="prekidac">
+      <input type="checkbox" id="prekidac-domet" onchange="prikaziDomet(this.checked)">
+      15 km range
+    </label>
+  </div>
+
+  <div id="karta"></div>
+
+  <div class="odeljak" id="odeljak-kalendar">
+    <h2>Hourly burden calendar</h2>
+    <p>Poor+ share (%) by month and hour of day, pooled across all 27 monitoring sites, 2024–2025. Darker color indicates a higher Poor+ share.</p>
+    <div class="omotac-tabele">
+      <table id="kalendar"></table>
+    </div>
+    <div class="legenda-kalendar">
+      <div class="traka-kalendar"></div>
+      <div class="krajevi-kalendar"><span id="kal-min"></span><span id="kal-max"></span></div>
+    </div>
+  </div>
+
+  <div class="odeljak" id="odeljak-sezona">
+    <h2>Seasonal pattern by monitoring site</h2>
+    <p>Poor+ share (%) by calendar month, 2024–2025. Select a monitoring site from the menu or click it on the map. All views use the same scale, so sites can be compared directly.</p>
+    <select id="izbor-lokacije" aria-label="Select monitoring site" onchange="izaberiLokaciju(Number(this.value))"></select>
+    <div id="stubici"></div>
+    <div id="nazivi-meseci"></div>
+    <div class="legenda-sezona" id="legenda-sezona"></div>
+  </div>
+
+  <div class="odeljak" id="sat-po-sat">
+    <h2>Hour by hour</h2>
+    <p>EAQI category at each monitoring site in the selected hour, from 1 January 2024 to 31 December 2025. Choose a parameter: the overall EAQI category or the category of an individual pollutant. Move the slider, use the buttons or pick a date. Hover over a monitoring site for details.</p>
+
+    <div class="izbor-parametra">
+      <label for="izbor-parametra">Parameter:</label>
+      <select id="izbor-parametra" aria-label="Select parameter" onchange="postaviSat(trenutniSat)">
+        <option value="ukupno">Overall (EAQI)</option>
+        <option value="PM2.5">PM2.5</option>
+        <option value="PM10">PM10</option>
+        <option value="NO2">NO2</option>
+        <option value="O3">O3</option>
+        <option value="SO2">SO2</option>
+      </select>
+    </div>
+
+    <div class="vreme" id="oznaka-vremena"></div>
+
+    <div class="kontrole">
+      <button onclick="pomeri(-24)">Previous day</button>
+      <button onclick="pomeri(-1)">Previous hour</button>
+      <button class="pusti" id="dugme-pusti" onclick="pustiIliZaustavi()">Play</button>
+      <button onclick="pomeri(1)">Next hour</button>
+      <button onclick="pomeri(24)">Next day</button>
+      <input type="date" id="izbor-datuma" aria-label="Select date" min="2024-01-01" max="2025-12-31" onchange="idiNaDatum(this.value)">
+    </div>
+
+    <input type="range" id="klizac" aria-label="Select hour, from 1 January 2024 to 31 December 2025" min="0" value="0" oninput="zaustavi(); postaviSat(Number(this.value))">
+
+    <div id="traka-epizode">
+      <div id="tekst-epizode"></div>
+      <div class="dugmici-epizode">
+        <button onclick="pustiEpizodu()">Play episode</button>
+        <button onclick="zavrsiPracenje()">Stop following</button>
+      </div>
+    </div>
+
+    <div id="karta-sat"></div>
+    <div class="legenda-eaqi" id="legenda-eaqi"></div>
+    <div id="sazetak-sata"></div>
+
+    <p class="napomena">The view is retrospective and based on validated hourly GZJZ data. On the day of the switch to daylight saving time (31 March 2024 and 30 March 2025), the hours 01:00 and 02:00 have no data at any monitoring site: 02:00 does not exist on that day because the clock moves forward (Section 3.2 of the study), and at 01:00 no site has a valid EAQI category.</p>
+  </div>
+
+  <div class="odeljak" id="odeljak-polutant">
+    <h2>Dominant pollutant in Poor+ hours</h2>
+    <p>Share (%) of Poor+ hours in which each pollutant determined the EAQI category, pooled across all 27 monitoring sites, 2024–2025. Hover over any part of the chart for the exact value.</p>
+    <div class="legenda-polutanata" id="legenda-polutanata"></div>
+
+    <h3 class="podnaslov">By season</h3>
+    <div id="po-sezoni"></div>
+
+    <h3 class="podnaslov">By hour of day</h3>
+    <div id="po-satu"></div>
+    <div id="sati-oznake"></div>
+
+    <p class="napomena">Shares refer to Poor+ hours, not to all measured hours. The dominant pollutant shows which pollutant determined the EAQI category; it does not attribute Poor+ hours to emission sources.</p>
+  </div>
+
+  <div class="odeljak" id="odeljak-teret">
+    <h2>What the person-hours indicator means</h2>
+    <p>The person-hours indicator combines two things: how many residents live in the zone of a monitoring site (up to 15 km, assigned to the nearest site) and how many hours the air at that site was in the Poor+ category. The product of the two is the total number of person-hours of adverse conditions.</p>
+    <p>Example from Table 21 of the study: 141,569 residents live in the zone of AMS JP Pošta Srbije, and the site recorded 3,605 Poor+ hours, so its indicator is 510,356,300, the highest in the network. AMS KCS Vračar, Franše Deperea has the most Poor+ hours (4,780), but only 38,204 residents live in its zone, so with 182,615,504 it ranks only twelfth. The first is the site where poor air coincided with the most people; the second is the site where the air was poor most often.</p>
+    <p class="napomena">Population in the table is rounded to whole numbers, so the product of the displayed values may differ slightly from the indicator value.</p>
+  </div>
+
+  <div class="odeljak">
+    <h2>Areas outside monitoring network coverage</h2>
+    <p id="pokrivenost-uvod"></p>
+    <table class="tabela-pokrivenost" id="tabela-pokrivenost"></table>
+    <p>Turn on the <strong>15 km range</strong> switch above the map: parts of the City of Belgrade that remain uncolored are more than 15 km from the nearest analyzed AMS.</p>
+    <p class="napomena">This finding concerns only the spatial availability of measurements, not the level of pollution in these areas, which remains unknown based on the available data. The 15 km radius is the maximum population assignment distance chosen in the study, not an official representativeness zone. Coverage refers only to the 27 analyzed AMS: other measurement sites (semi-automatic, indicative or national network stations) may exist in these areas, so they are not necessarily without any air quality measurement, but lie beyond the reach of continuous hourly monitoring.</p>
+  </div>
+
+  <div class="odeljak" id="odeljak-epizode">
+    <h2>Duration: Poor+ episodes</h2>
+    <p>A Poor+ episode is an uninterrupted run of one or more consecutive valid EAQI hours in the category Poor or worse, with no minimum duration threshold (Section 4.3.7 of the study). In addition to all episodes, night and evening episodes (containing at least one hour between 18:00 and 05:59) and winter episodes (containing at least one hour in December, January or February) can be shown separately. Values are computed from the hourly data and are identical to Tables 13 and 14 of the study.</p>
+    <p>The <strong>Show</strong> button takes you to the start of that site's longest episode (of all episodes, or of winter episodes) in the Hour by hour section. The site is marked there with a thick black ring, and a bar above the map shows the start and end of the episode and where you currently are. The <strong>Play episode</strong> button runs through it and stops automatically at the end. Other sites remain visible, so you can see whether the episode was local or affected a larger part of the city at the same time.</p>
+    <div class="dugmad-epizoda" role="group" aria-label="Episode type">
+      <button id="ep-sve" onclick="izaberiVrstuEpizoda('sve')">All episodes</button>
+      <button id="ep-nocne" onclick="izaberiVrstuEpizoda('nocne')">Night and evening</button>
+      <button id="ep-zimske" onclick="izaberiVrstuEpizoda('zimske')">Winter</button>
+    </div>
+    <p class="napomena" id="opis-vrste-epizoda"></p>
+    <div class="omotac-tabele">
+      <table class="tabela-epizoda" id="tabela-epizoda"></table>
+    </div>
+  </div>
+
+  <div class="odeljak">
+    <h2>Limitations</h2>
+    <ul>
+      <li><strong>27 AMS are covered.</strong> The presentation is based on 27 automatic monitoring stations of the GZJZ local network, the only sites in that network with hourly data for the EAQI pollutants. The semi-automatic and indicative sites of the local network and the stations of the national SEPA network are not included, so the results describe conditions at these stations, not across the entire air quality measurement network in Belgrade.</li>
+      <li><strong>Not a compliance assessment.</strong> This presentation is not an assessment of regulatory compliance with limit values; that remains within the relevant regulatory procedures.</li>
+      <li><strong>Not a health assessment.</strong> The EAQI is an air quality index, not a measure of health risk. Poor+ is an operationally defined group of the categories Poor, Very poor and Extremely poor used in the study, not a separate official index category.</li>
+      <li><strong>The person-hours indicator</strong> is an indicator of the spatio-temporal burden on the population, not measured individual exposure or a health effect. It assumes that the air quality category determined at a monitoring site approximately applies to its zone and does not account for population mobility, time spent indoors or the sensitivity of particular groups. The 2024 population distribution was used.</li>
+      <li><strong>O3 is not measured</strong> at three monitoring sites (Veliki Crljeni, MZ Ušće Obrenovac and Zemun), so their Poor+ share may be lower than it would be if O3 were available.</li>
+      <li><strong>No meteorological data.</strong> Possible explanations for seasonal and diurnal patterns remain consistent with the findings but empirically untested; the patterns do not prove individual emission sources or causal relationships.</li>
+      <li><strong>The base map</strong> (municipal boundaries and rivers) is for orientation only.</li>
+    </ul>
+  </div>
+
+  <footer>
+    Data sources: validated hourly data from 27 automatic monitoring stations (AMS) of the local network of the Belgrade City Institute of Public Health (GZJZ), 2024–2025; population WorldPop, release R2025A (Bondarenko et al., 2025). Classification according to the revised European Air Quality Index (EAQI). All values are taken from the results of the independent research study “Every Hour Matters: An Hourly Spatio-Temporal Assessment of Air Quality, Dominant Pollutants, and Potential Population Burden in Belgrade, Serbia (2024–2025)”.
+  </footer>
+
+</main>
+
+  <script src="leaflet.js"></script>
+  <script src="podloga.js"></script>
+  <script src="lokacije.js"></script>
+  <script src="podaci.js"></script>
+  <script src="satni.js"></script>
+  <script>
+    // English number format: decimal point, comma for thousands
+    function udeo(broj) {
+      return broj.toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + "%";
+    }
+    function jednaDecimala(broj) {
+      return broj.toLocaleString("en-GB", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+    }
+    function dveDecimale(broj) {
+      return broj.toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+    function ceoBroj(broj) {
+      return broj.toLocaleString("en-GB");
+    }
+
+    // Singular or plural: 1 site, 3 sites
+    function recLokacija(n) {
+      return n === 1 ? "site" : "sites";
+    }
+
+    const kratkiMeseci = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const puniMeseci = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+
+    // ================= BOJE, USKLAĐENE SA SLIKAMA IZ RADA =================
+
+    // Dominantan polutant: iste boje kao na Slici 9 (Okabe-Ito paleta)
+    const bojePolutanata = {
+      "PM2.5": "#d55e00",
+      "NO2": "#0072b2",
+      "O3": "#009e73",
+      "PM10": "#e69f00",
+      "SO2": "#cc79a7"
+    };
+    const redosledPolutanata = ["PM2.5", "PM10", "NO2", "O3", "SO2"];
+
+    // Sezone: nisu posebno bojene u radu, izabrane da se slažu sa ostatkom
+    // Ključevi ostaju srpski jer su tako zapisani u podaci.js; na ekranu se prikazuju engleski nazivi
+    const bojeSezona = {
+      "Zima": "#56b4e9",
+      "Proleće": "#a6c98a",
+      "Leto": "#e69f00",
+      "Jesen": "#a07a5a"
+    };
+    const naziviSezona = { "Zima": "Winter", "Proleće": "Spring", "Leto": "Summer", "Jesen": "Autumn" };
+
+    // Podloga: kao na kartama u radu
+    const bojaOpstine = "#f2f2f2";
+    const bojaGranice = "#6f8faf";
+    const bojaReke = "#9ec3e0";
+
+    // Person-hours krugovi: kao na Slici 13
+    const bojaPH = "#629ecb";
+
+    // Domet od 15 km
+    const bojaDometa = "#6f8faf";
+
+    // EAQI kategorije: standardne boje evropskog indeksa (EEA); prva je za sate bez validne kategorije
+    const naziviKategorija = ["No valid category", "Good", "Fair", "Moderate", "Poor", "Very poor", "Extremely poor"];
+    const bojeKategorija = ["#cccccc", "#50f0e6", "#50ccaa", "#f0e641", "#ff5050", "#960032", "#7d2181"];
+
+    // Skala od svetložute do tamnocrvene, kao na Slikama 4, 6 i 7
+    const stopoviSkale = [
+      [255, 255, 178],
+      [254, 204, 92],
+      [253, 141, 60],
+      [240, 59, 32],
+      [189, 0, 38]
+    ];
+
+    function bojaSkale(vrednost, min, max) {
+      let t = (vrednost - min) / (max - min);
+      t = Math.max(0, Math.min(1, t));
+      const polozaj = t * (stopoviSkale.length - 1);
+      const i = Math.min(Math.floor(polozaj), stopoviSkale.length - 2);
+      const f = polozaj - i;
+      const a = stopoviSkale[i];
+      const b = stopoviSkale[i + 1];
+      const r = Math.round(a[0] + f * (b[0] - a[0]));
+      const g = Math.round(a[1] + f * (b[1] - a[1]));
+      const bb = Math.round(a[2] + f * (b[2] - a[2]));
+      return "rgb(" + r + ", " + g + ", " + bb + ")";
+    }
+
+    // Sezone prema odeljku 4.3.1 rada: zima decembar do februar, proleće mart do maj, leto jun do avgust, jesen septembar do novembar
+    const sezonaMeseca = ["Zima", "Zima", "Proleće", "Proleće", "Proleće", "Leto", "Leto", "Leto", "Jesen", "Jesen", "Jesen", "Zima"];
+
+    // Tipovi stanica prema Tabeli 1 rada
+    const tipovi = {
+      "G": "urban",
+      "S": "traffic",
+      "PG": "suburban",
+      "PG/I": "suburban-industrial",
+      "I": "industrial",
+      "G/PG": "urban-suburban"
+    };
+
+    // Pokrivenost stanovništva, prepisano iz rada: Tabela 20 (radijus 15 km) i odeljak 4.5.4
+    const pokrivenost = {
+      ukupno: 1741188,
+      pokriveno: 1706590,
+      pokrivenoUdeo: 98.0,
+      nepokriveno: 34598,
+      nepokrivenoUdeo: 2.0,
+      oblasti: [
+        { naziv: "Southwest: Obrenovac city municipality", stanovnika: 29974, udeo: 86.6 },
+        { naziv: "East: inner and southern part of Grocka city municipality", stanovnika: 3906, udeo: 11.3 },
+        { naziv: "North: rural part of Palilula city municipality around Padinska Skela", stanovnika: 716, udeo: 2.1 }
+      ]
+    };
+
+    // Izgled podloge, isti za obe karte
+    function stilPodloge(objekat) {
+      if (objekat.properties.vrsta === "reka") {
+        return { color: bojaReke, weight: 3 };
+      }
+      return { color: bojaGranice, weight: 1, fillColor: bojaOpstine, fillOpacity: 1 };
+    }
+
+    // ================= KARTA =================
+
+    // Najmanji i najveći Poor+ udeo, izračunati iz podataka
+    const sviUdeli = lokacije.features.map(function (t) { return t.properties.poor_plus_pct; });
+    const najmanji = Math.min(...sviUdeli);
+    const najveci = Math.max(...sviUdeli);
+
+    function bojaZaUdeo(vrednost) {
+      return bojaSkale(vrednost, najmanji, najveci);
+    }
+
+    // Najveći person-hours pokazatelj i lokacija na kojoj je zabeležen
+    let najvecaLokacijaPH = lokacije.features[0];
+    lokacije.features.forEach(function (t) {
+      if (t.properties.person_hours_15km > najvecaLokacijaPH.properties.person_hours_15km) {
+        najvecaLokacijaPH = t;
+      }
+    });
+    const najveciPH = najvecaLokacijaPH.properties.person_hours_15km;
+
+    // Broj lokacija po dominantnom polutantu
+    const brojPoPolutantu = {};
+    lokacije.features.forEach(function (t) {
+      const pol = t.properties.dominantan_polutant;
+      brojPoPolutantu[pol] = (brojPoPolutantu[pol] || 0) + 1;
+    });
+
+    // Poluprečnik kruga tako da je površina srazmerna person-hours pokazatelju
+    function poluprecnikZaPH(vrednost) {
+      return 24 * Math.sqrt(vrednost / najveciPH);
+    }
+
+    const karta = L.map("karta");
+
+    const centralneOpstine = ["Stari grad", "Vračar", "Savski venac"];
+
+    const slojPodloge = L.geoJSON(podloga, {
+      style: stilPodloge,
+      onEachFeature: function (objekat, oblik) {
+        if (objekat.properties.vrsta === "opstina") {
+          let klasa = "naziv-opstine";
+          if (centralneOpstine.includes(objekat.properties.naziv)) {
+            klasa = klasa + " centralna";
+          }
+          oblik.bindTooltip(objekat.properties.naziv, {
+            permanent: true,
+            direction: "center",
+            className: klasa
+          });
+        }
+      }
+    }).addTo(karta);
+
+    // Poseban sloj za domet od 15 km: krugovi su puni, a providnost se daje celom sloju,
+    // pa se preklopljeni krugovi ne zatamnjuju
+    karta.createPane("domet");
+    karta.getPane("domet").style.zIndex = 450;
+    karta.getPane("domet").style.opacity = 0.3;
+    karta.getPane("domet").style.pointerEvents = "none";
+
+    const slojDometa = L.layerGroup();
+    lokacije.features.forEach(function (t) {
+      const [duzina, sirina] = t.geometry.coordinates;
+      L.circle([sirina, duzina], {
+        radius: 15000,
+        pane: "domet",
+        stroke: false,
+        fillColor: bojaDometa,
+        fillOpacity: 1,
+        interactive: false
+      }).addTo(slojDometa);
+    });
+
+    function prikaziDomet(ukljuceno) {
+      if (ukljuceno) {
+        slojDometa.addTo(karta);
+      } else {
+        karta.removeLayer(slojDometa);
+      }
+    }
+
+    const slojLokacija = L.geoJSON(lokacije, {
+      pointToLayer: function (tacka, polozaj) {
+        return L.circleMarker(polozaj, { color: "#333333", weight: 1, fillOpacity: 0.95 });
+      },
+      onEachFeature: function (tacka, marker) {
+        const p = tacka.properties;
+        const sadrzaj =
+          '<div class="prozorcic">' +
+            "<h3>" + p.gzjz_broj + ". " + p.naziv_stanice + "</h3>" +
+            "<table>" +
+              "<tr><td>Station type</td><td class='vrednost'>" + p.tip_stanice + " (" + tipovi[p.tip_stanice] + ")</td></tr>" +
+              "<tr><td>Poor+ share</td><td class='vrednost'>" + udeo(p.poor_plus_pct) + "</td></tr>" +
+              "<tr><td>Dominant pollutant</td><td class='vrednost'>" + p.dominantan_polutant + "</td></tr>" +
+              "<tr><td>Person-hours indicator</td><td class='vrednost'>" + ceoBroj(p.person_hours_15km) + "</td></tr>" +
+            "</table>" +
+          "</div>";
+        marker.bindPopup(sadrzaj);
+        marker.bindTooltip(p.gzjz_broj + ". " + p.naziv_stanice, { direction: "top", offset: [0, -6] });
+        marker.on("click", function () {
+          izaberiLokaciju(p.gzjz_broj);
+        });
+      }
+    }).addTo(karta);
+
+    // Legenda dole desno; sadržaj se menja u funkciji prikazi
+    const legenda = L.control({ position: "bottomright" });
+    legenda.onAdd = function () {
+      return L.DomUtil.create("div", "legenda");
+    };
+    legenda.addTo(karta);
+
+    // Prebacivanje između tri pokazatelja
+    function prikazi(pokazatelj) {
+      slojLokacija.eachLayer(function (marker) {
+        const p = marker.feature.properties;
+        if (pokazatelj === "poor") {
+          marker.setRadius(8);
+          marker.setStyle({ fillColor: bojaZaUdeo(p.poor_plus_pct), fillOpacity: 0.95 });
+        } else if (pokazatelj === "polutant") {
+          marker.setRadius(8);
+          marker.setStyle({ fillColor: bojePolutanata[p.dominantan_polutant], fillOpacity: 0.95 });
+        } else {
+          marker.setRadius(poluprecnikZaPH(p.person_hours_15km));
+          marker.setStyle({ fillColor: bojaPH, fillOpacity: 0.75 });
+        }
+      });
+
+      const div = legenda.getContainer();
+      if (pokazatelj === "poor") {
+        div.innerHTML =
+          "<strong>Poor+ share, 2024–2025</strong>" +
+          "<div class='traka'></div>" +
+          "<div class='krajevi'><span>" + udeo(najmanji) + "</span><span>" + udeo(najveci) + "</span></div>";
+      } else if (pokazatelj === "polutant") {
+        let redovi = "<strong>Dominant pollutant in Poor+ hours</strong>";
+        Object.keys(brojPoPolutantu).forEach(function (pol) {
+          const n = brojPoPolutantu[pol];
+          redovi += "<div class='stavka'><span class='kruzic' style='background:" + bojePolutanata[pol] + "'></span>" +
+                    pol + " (" + n + " " + recLokacija(n) + ")</div>";
+        });
+        div.innerHTML = redovi;
+      } else {
+        div.innerHTML =
+          "<strong>Person-hours indicator (15 km radius)</strong>" +
+          "<div class='stavka'>Circle area is proportional to the number of person-hours.</div>" +
+          "<div class='stavka'>Highest value: " + ceoBroj(najveciPH) + " (" + najvecaLokacijaPH.properties.naziv_stanice + ")</div>";
+      }
+
+      document.querySelectorAll(".dugmad button").forEach(function (d) { d.classList.remove("aktivno"); });
+      document.getElementById("dugme-" + pokazatelj).classList.add("aktivno");
+    }
+
+    function podesiNazive() {
+      const kontejner = document.getElementById("karta");
+      if (karta.getZoom() < 11) {
+        kontejner.classList.add("sitno");
+      } else {
+        kontejner.classList.remove("sitno");
+      }
+    }
+
+    karta.on("zoomend", podesiNazive);
+
+    karta.attributionControl.addAttribution("Base map: Natural Earth, municipalities from the QGIS project");
+    karta.fitBounds(slojPodloge.getBounds());
+    podesiNazive();
+    prikazi("poor");
+
+    // ================= KALENDAR SATNOG OPTEREĆENJA =================
+
+    const sveVrednostiKalendara = kalendar.flat();
+    const kalMin = Math.min(...sveVrednostiKalendara);
+    const kalMax = Math.max(...sveVrednostiKalendara);
+
+    function nacrtajKalendar() {
+      const tabela = document.getElementById("kalendar");
+
+      // Zaglavlje sa satima 0 do 23
+      let html = "<tr><th></th>";
+      for (let sat = 0; sat < 24; sat++) {
+        html += "<th>" + sat + "</th>";
+      }
+      html += "</tr>";
+
+      // Po jedan red za svaki mesec
+      for (let m = 0; m < 12; m++) {
+        html += "<tr><th class='mesec'>" + kratkiMeseci[m] + "</th>";
+        for (let sat = 0; sat < 24; sat++) {
+          const v = kalendar[m][sat];
+          const boja = bojaSkale(v, kalMin, kalMax);
+          const tamno = (v - kalMin) / (kalMax - kalMin) > 0.6;
+          const bojaTeksta = tamno ? "white" : "#333333";
+          const opis = puniMeseci[m] + ", " + String(sat).padStart(2, "0") + ":00: " + jednaDecimala(v) + "%";
+          html += "<td style='background:" + boja + "; color:" + bojaTeksta + "' title='" + opis + "'>" + jednaDecimala(v) + "</td>";
+        }
+        html += "</tr>";
+      }
+
+      tabela.innerHTML = html;
+      document.getElementById("kal-min").textContent = jednaDecimala(kalMin) + "%";
+      document.getElementById("kal-max").textContent = jednaDecimala(kalMax) + "%";
+    }
+
+    nacrtajKalendar();
+
+    // ================= SAT PO SAT: VREMENSKI KLIZAČ =================
+
+    const daniUNedelji = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+    const meseciGenitiv = puniMeseci;
+    const naziviPolutanata = { "P": "PM2.5", "M": "PM10", "N": "NO2", "O": "O3", "S": "SO2" };
+
+    const brojSati = satniPodaci.brojSati;
+    const pocetakMs = Date.UTC(2024, 0, 1, 0, 0);
+    const satUMs = 3600000;
+
+    // Računanje datuma ide preko UTC-a, da prelazak na letnje vreme u pregledaču ne pomeri sate
+    function datumZaSat(indeks) {
+      return new Date(pocetakMs + indeks * satUMs);
+    }
+
+    function opisVremena(indeks) {
+      const d = datumZaSat(indeks);
+      return daniUNedelji[d.getUTCDay()] + ", " + d.getUTCDate() + " " + meseciGenitiv[d.getUTCMonth()] + " " +
+             d.getUTCFullYear() + ", " + String(d.getUTCHours()).padStart(2, "0") + ":00";
+    }
+
+    // Karta se prvo postavi na prikaz, pa se tek onda dodaju slojevi
+    const kartaSat = L.map("karta-sat");
+    kartaSat.fitBounds(slojPodloge.getBounds());
+    L.geoJSON(podloga, { style: stilPodloge }).addTo(kartaSat);
+    kartaSat.attributionControl.addAttribution("Base map: Natural Earth, municipalities from the QGIS project");
+
+    // Po jedan kružić za svaku monitoring lokaciju, sa ključem gzjz_broj
+    const markeriSat = {};
+    lokacije.features.forEach(function (t) {
+      const [duzina, sirina] = t.geometry.coordinates;
+      const marker = L.circleMarker([sirina, duzina], { radius: 8, color: "#333333", weight: 1, fillOpacity: 0.95 }).addTo(kartaSat);
+      marker.bindTooltip("", { direction: "top", offset: [0, -6] });
+      markeriSat[t.properties.gzjz_broj] = { marker: marker, naziv: t.properties.gzjz_broj + ". " + t.properties.naziv_stanice };
+    });
+
+    // Legenda EAQI kategorija ispod karte
+    let legendaEaqi = "";
+    for (let k = 1; k < naziviKategorija.length; k++) {
+      legendaEaqi += "<span class='kvadrat' style='background:" + bojeKategorija[k] + "'></span>" + naziviKategorija[k];
+    }
+    legendaEaqi += "<span class='kvadrat' style='background:" + bojeKategorija[0] + "'></span>no data";
+    legendaEaqi += "<span class='prazan'></span>not measured";
+    document.getElementById("legenda-eaqi").innerHTML = legendaEaqi;
+
+    const klizac = document.getElementById("klizac");
+    klizac.max = brojSati - 1;
+
+    let trenutniSat = 0;
+    let tajmer = null;
+    let pracenaEpizoda = null;
+
+    // Oblik reči posle „na“: na 1 monitoring lokaciji, na 3 monitoring lokacije
+    function naLokacija(n) {
+      return n + " monitoring " + recLokacija(n);
+    }
+
+    // Glavna funkcija: prikaz izabranog sata i parametra na karti
+    function postaviSat(indeks) {
+      const parametar = document.getElementById("izbor-parametra").value;
+      indeks = Math.max(0, Math.min(brojSati - 1, indeks));
+      trenutniSat = indeks;
+      klizac.value = indeks;
+      document.getElementById("oznaka-vremena").textContent = opisVremena(indeks);
+
+      const d = datumZaSat(indeks);
+      document.getElementById("izbor-datuma").value = d.toISOString().slice(0, 10);
+
+      let saPodatkom = 0;
+      let poorPlus = 0;
+      let nemereno = 0;
+
+      Object.keys(markeriSat).forEach(function (broj) {
+        const m = markeriSat[broj];
+        const neMeriSe = (satniPodaci.neMeriSe[broj] || []).includes(parametar);
+
+        // Polutant koji se na ovoj lokaciji ne meri: prazan krug sa isprekidanom ivicom
+        if (neMeriSe) {
+          m.marker.setStyle({ color: "#666666", weight: 1, dashArray: "3 3", fillOpacity: 0 });
+          m.marker.setTooltipContent("<strong>" + m.naziv + "</strong><br>" + parametar + " is not measured at this site");
+          nemereno++;
+          return;
+        }
+
+        const kategorija = Number(satniPodaci.kategorije[parametar][broj][indeks]);
+        const pratiSe = pracenaEpizoda && Number(broj) === pracenaEpizoda.broj;
+        m.marker.setStyle({
+          color: pratiSe ? "#000000" : "#333333",
+          weight: pratiSe ? 4 : 1,
+          dashArray: null,
+          fillColor: bojeKategorija[kategorija],
+          fillOpacity: kategorija === 0 ? 0.5 : 0.95
+        });
+        if (pratiSe) m.marker.bringToFront();
+
+        let tekst = "<strong>" + m.naziv + "</strong><br>";
+        if (parametar === "ukupno") {
+          tekst += "EAQI: " + naziviKategorija[kategorija];
+          const polutant = satniPodaci.dominantni[broj][indeks];
+          if (naziviPolutanata[polutant]) {
+            tekst += "<br>Dominant pollutant: " + naziviPolutanata[polutant];
+          }
+        } else {
+          tekst += parametar + ": " + naziviKategorija[kategorija];
+        }
+        m.marker.setTooltipContent(tekst);
+
+        if (kategorija > 0) saPodatkom++;
+        if (kategorija >= 4) poorPlus++;
+      });
+
+      let sazetak;
+      if (parametar === "ukupno") {
+        sazetak = "Poor+ (Poor or worse) at <strong>" + poorPlus + "</strong> of " + saPodatkom +
+                  " monitoring sites with a valid category in this hour.";
+      } else {
+        sazetak = "Category Poor or worse for " + parametar + " at <strong>" + poorPlus + "</strong> of " + saPodatkom +
+                  " monitoring sites with a valid category for this pollutant in this hour.";
+        if (nemereno > 0) {
+          sazetak += " " + parametar + " is not measured at " + naLokacija(nemereno) + ".";
+        }
+      }
+      document.getElementById("sazetak-sata").innerHTML = sazetak;
+      osveziTrakuEpizode();
+    }
+
+    function pomeri(koliko) {
+      zaustavi();
+      postaviSat(trenutniSat + koliko);
+    }
+
+    // Automatsko smenjivanje sati
+    function pustiIliZaustavi() {
+      if (tajmer) {
+        zaustavi();
+      } else {
+        document.getElementById("dugme-pusti").textContent = "Pause";
+        tajmer = setInterval(function () {
+          if (trenutniSat >= brojSati - 1) {
+            zaustavi();
+            return;
+          }
+          postaviSat(trenutniSat + 1);
+        }, 200);
+      }
+    }
+
+    function zaustavi() {
+      if (tajmer) {
+        clearInterval(tajmer);
+        tajmer = null;
+      }
+      document.getElementById("dugme-pusti").textContent = "Play";
+    }
+
+    // Skok na izabrani datum, uz zadržavanje istog sata u danu
+    function idiNaDatum(vrednost) {
+      if (!vrednost) return;
+      zaustavi();
+      const [godina, mesec, dan] = vrednost.split("-").map(Number);
+      const satUDanu = trenutniSat % 24;
+      const indeks = (Date.UTC(godina, mesec - 1, dan) - pocetakMs) / satUMs + satUDanu;
+      postaviSat(indeks);
+    }
+
+    postaviSat(0);
+
+    // ================= SEZONSKI OBRAZAC PO MONITORING LOKACIJI =================
+
+    // Najveća mesečna vrednost u celoj mreži, zajednička skala za sve lokacije
+    const sveMesecneVrednosti = Object.values(mesecnoPoLokaciji).flat();
+    const najvecaMesecna = Math.max(...sveMesecneVrednosti);
+
+    // Padajući meni sa 27 lokacija, po rednom broju
+    function popuniMeni() {
+      const meni = document.getElementById("izbor-lokacije");
+      const poredjane = lokacije.features.slice().sort(function (a, b) {
+        return a.properties.gzjz_broj - b.properties.gzjz_broj;
+      });
+      poredjane.forEach(function (t) {
+        const opcija = document.createElement("option");
+        opcija.value = t.properties.gzjz_broj;
+        opcija.textContent = t.properties.gzjz_broj + ". " + t.properties.naziv_stanice;
+        meni.appendChild(opcija);
+      });
+    }
+
+    // Nazivi meseci ispod stubića i legenda sezona
+    function nacrtajOznake() {
+      let meseci = "";
+      kratkiMeseci.forEach(function (m) { meseci += "<span>" + m + "</span>"; });
+      document.getElementById("nazivi-meseci").innerHTML = meseci;
+
+      let legendaHtml = "";
+      Object.keys(bojeSezona).forEach(function (s) {
+        legendaHtml += "<span class='kvadrat' style='background:" + bojeSezona[s] + "'></span>" + naziviSezona[s];
+      });
+      document.getElementById("legenda-sezona").innerHTML = legendaHtml;
+    }
+
+    // Crtanje 12 stubića za izabranu lokaciju
+    function izaberiLokaciju(broj) {
+      document.getElementById("izbor-lokacije").value = broj;
+      const vrednosti = mesecnoPoLokaciji[broj];
+      let html = "";
+      for (let m = 0; m < 12; m++) {
+        const v = vrednosti[m];
+        const visina = (v / najvecaMesecna) * 100;
+        html +=
+          "<div class='stubic-kolona' title='" + puniMeseci[m] + ": " + jednaDecimala(v) + "%'>" +
+            "<div class='stubic-vrednost'>" + jednaDecimala(v) + "</div>" +
+            "<div class='stubic' style='height:" + visina + "%; background:" + bojeSezona[sezonaMeseca[m]] + "'></div>" +
+          "</div>";
+      }
+      document.getElementById("stubici").innerHTML = html;
+    }
+
+    popuniMeni();
+    nacrtajOznake();
+    izaberiLokaciju(1);
+
+    // ================= DOMINANTAN POLUTANT PO SEZONI I SATU =================
+
+    // Legenda polutanata
+    function nacrtajLegenduPolutanata() {
+      let html = "";
+      redosledPolutanata.forEach(function (pol) {
+        html += "<span class='kvadrat' style='background:" + bojePolutanata[pol] + "'></span>" + pol;
+      });
+      document.getElementById("legenda-polutanata").innerHTML = html;
+    }
+
+    // Četiri vodoravne trake, po jedna za svaku sezonu
+    function nacrtajPoSezoni() {
+      let html = "";
+      Object.keys(polutantPoSezoni).forEach(function (sezona) {
+        html += "<div class='red-sezone'><div class='naziv'>" + naziviSezona[sezona] + "</div><div class='traka-sezone'>";
+        redosledPolutanata.forEach(function (pol) {
+          const v = polutantPoSezoni[sezona][pol];
+          const natpis = v >= 8 ? jednaDecimala(v) : "";
+          html += "<div class='deo' style='width:" + v + "%; background:" + bojePolutanata[pol] + "' title='" +
+                  naziviSezona[sezona] + ", " + pol + ": " + jednaDecimala(v) + "%'>" + natpis + "</div>";
+        });
+        html += "</div></div>";
+      });
+      document.getElementById("po-sezoni").innerHTML = html;
+    }
+
+    // 24 uspravna stubića, po jedan za svaki sat
+    function nacrtajPoSatu() {
+      let html = "";
+      let oznake = "";
+      for (let sat = 0; sat < 24; sat++) {
+        html += "<div class='kolona-sata'>";
+        redosledPolutanata.forEach(function (pol) {
+          const v = polutantPoSatu[pol][sat];
+          html += "<div style='height:" + v + "%; background:" + bojePolutanata[pol] + "' title='" +
+                  String(sat).padStart(2, "0") + ":00, " + pol + ": " + jednaDecimala(v) + "%'></div>";
+        });
+        html += "</div>";
+        oznake += "<span>" + sat + "</span>";
+      }
+      document.getElementById("po-satu").innerHTML = html;
+      document.getElementById("sati-oznake").innerHTML = oznake;
+    }
+
+    nacrtajLegenduPolutanata();
+    nacrtajPoSezoni();
+    nacrtajPoSatu();
+
+    // ================= OBLASTI IZVAN POKRIVENOSTI MREŽE MONITORINGA =================
+
+    function nacrtajPokrivenost() {
+      document.getElementById("pokrivenost-uvod").innerHTML =
+        "<strong>" + ceoBroj(pokrivenost.pokriveno) + "</strong> residents (" + jednaDecimala(pokrivenost.pokrivenoUdeo) +
+        "% of " + ceoBroj(pokrivenost.ukupno) + ") live within 15 km of the nearest analyzed AMS. The remaining <strong>" +
+        ceoBroj(pokrivenost.nepokriveno) + "</strong> residents (" + jednaDecimala(pokrivenost.nepokrivenoUdeo) +
+        "%) are not evenly distributed but concentrated in three spatially separate areas. Population: WorldPop, release R2025A (Bondarenko et al., 2025).";
+
+      let html = "<tr><th>Area</th><th class='broj'>Residents</th><th class='broj'>Share of uncovered (%)</th></tr>";
+      pokrivenost.oblasti.forEach(function (o) {
+        html += "<tr><td>" + o.naziv + "</td><td class='broj'>" + ceoBroj(o.stanovnika) +
+                "</td><td class='broj'>" + jednaDecimala(o.udeo) + "</td></tr>";
+      });
+      document.getElementById("tabela-pokrivenost").innerHTML = html;
+    }
+
+    nacrtajPokrivenost();
+
+    // ================= TRAJANJE: POOR+ EPIZODE =================
+
+    // Epizoda je neprekidan niz sati sa ukupnom kategorijom 4, 5 ili 6 (Zagađen ili lošije)
+    function epizodeIzNiza(niz) {
+      const trazi = /[456]+/g;
+      const lista = [];
+      let pogodak;
+      while ((pogodak = trazi.exec(niz)) !== null) {
+        lista.push({ pocetak: pogodak.index, trajanje: pogodak[0].length });
+      }
+      return lista;
+    }
+
+    // Noćna/večernja epizoda: bar jedan sat u intervalu 18:00–05:59
+    function imaNocniSat(e) {
+      for (let i = e.pocetak; i < e.pocetak + e.trajanje; i++) {
+        const sat = datumZaSat(i).getUTCHours();
+        if (sat >= 18 || sat < 6) return true;
+      }
+      return false;
+    }
+
+    // Zimska epizoda: bar jedan sat u decembru, januaru ili februaru
+    function imaZimskiSat(e) {
+      for (let i = e.pocetak; i < e.pocetak + e.trajanje; i++) {
+        const mesec = datumZaSat(i).getUTCMonth();
+        if (mesec === 11 || mesec === 0 || mesec === 1) return true;
+      }
+      return false;
+    }
+
+    // Broj, prosek, medijan i najduža epizoda za listu epizoda
+    function statistikaEpizoda(lista) {
+      const trajanja = lista.map(function (e) { return e.trajanje; });
+      const poredjana = trajanja.slice().sort(function (a, b) { return a - b; });
+      const sredina = Math.floor(poredjana.length / 2);
+      const medijan = poredjana.length % 2 === 1 ? poredjana[sredina] : (poredjana[sredina - 1] + poredjana[sredina]) / 2;
+      let najduza = lista[0];
+      lista.forEach(function (e) { if (e.trajanje > najduza.trajanje) najduza = e; });
+      const zbir = trajanja.reduce(function (a, b) { return a + b; }, 0);
+      return {
+        broj: lista.length,
+        prosek: zbir / lista.length,
+        medijan: medijan,
+        najduza: najduza.trajanje,
+        pocetak: najduza.pocetak
+      };
+    }
+
+    // Epizode se računaju jednom, za svaku lokaciju i svaku vrstu
+    const epizodePoLokaciji = lokacije.features.map(function (t) {
+      const broj = t.properties.gzjz_broj;
+      const sve = epizodeIzNiza(satniPodaci.kategorije["ukupno"][broj]);
+      return {
+        gzjz: broj,
+        naziv: t.properties.naziv_stanice,
+        sve: sve,
+        nocne: sve.filter(imaNocniSat),
+        zimske: sve.filter(imaZimskiSat)
+      };
+    });
+
+    let ukupnoEpizoda = 0, ukupnoNocnih = 0, ukupnoZimskih = 0;
+    epizodePoLokaciji.forEach(function (l) {
+      ukupnoEpizoda += l.sve.length;
+      ukupnoNocnih += l.nocne.length;
+      ukupnoZimskih += l.zimske.length;
+    });
+
+    const naslovEpizode = { sve: "Longest Poor+ episode", zimske: "Longest winter Poor+ episode" };
+
+    function izaberiVrstuEpizoda(vrsta) {
+      document.querySelectorAll(".dugmad-epizoda button").forEach(function (d) { d.classList.remove("aktivno"); });
+      document.getElementById("ep-" + vrsta).classList.add("aktivno");
+
+      let opis;
+      if (vrsta === "sve") {
+        opis = "All Poor+ episodes, ranked in descending order by number of episodes (Table 13). Network total: " + ceoBroj(ukupnoEpizoda) + " episodes.";
+      } else if (vrsta === "nocne") {
+        opis = "Episodes with at least one hour between 18:00 and 05:59, ranked in descending order by their number (Table 14). Network: " +
+               ceoBroj(ukupnoNocnih) + " of " + ceoBroj(ukupnoEpizoda) + " episodes (" + jednaDecimala(100 * ukupnoNocnih / ukupnoEpizoda) + "%).";
+      } else {
+        opis = "Episodes with at least one hour in December, January or February, including those starting in late November or continuing into early March, ranked in descending order by their number (Table 14). Network: " +
+               ceoBroj(ukupnoZimskih) + " of " + ceoBroj(ukupnoEpizoda) + " episodes (" + jednaDecimala(100 * ukupnoZimskih / ukupnoEpizoda) + "%).";
+      }
+      document.getElementById("opis-vrste-epizoda").textContent = opis;
+
+      const redovi = epizodePoLokaciji.map(function (l) {
+        const st = statistikaEpizoda(l[vrsta]);
+        st.gzjz = l.gzjz;
+        st.naziv = l.naziv;
+        return st;
+      });
+      redovi.sort(function (a, b) { return b.broj - a.broj; });
+      const najviseEpizoda = redovi[0].broj;
+
+      let html;
+      if (vrsta === "sve") {
+        html = "<tr><th>Monitoring site</th><th>Number of episodes</th><th class='broj'>Mean duration (h)</th>" +
+               "<th class='broj'>Median duration (h)</th><th class='broj'>Longest episode (h)</th><th>Longest episode</th></tr>";
+      } else if (vrsta === "nocne") {
+        html = "<tr><th>Monitoring site</th><th>Number of night and evening episodes</th><th class='broj'>Their mean duration (h)</th></tr>";
+      } else {
+        html = "<tr><th>Monitoring site</th><th>Number of winter episodes</th><th class='broj'>Their mean duration (h)</th>" +
+               "<th class='broj'>Longest winter episode (h)</th><th>Longest winter episode</th></tr>";
+      }
+
+      redovi.forEach(function (e) {
+        const sirina = Math.round((e.broj / najviseEpizoda) * 160);
+        let red = "<tr><td>" + e.gzjz + ". " + e.naziv + "</td>" +
+          "<td><div class='stubac-broj'><span class='traka-epizoda' style='width:" + sirina + "px'></span>" + ceoBroj(e.broj) + "</div></td>" +
+          "<td class='broj'>" + dveDecimale(e.prosek) + "</td>";
+        if (vrsta === "sve") {
+          const medijanTekst = Number.isInteger(e.medijan) ? String(e.medijan) : jednaDecimala(e.medijan);
+          red += "<td class='broj'>" + medijanTekst + "</td>";
+        }
+        if (vrsta !== "nocne") {
+          red += "<td class='broj'>" + ceoBroj(e.najduza) + "</td>" +
+                 "<td><button onclick='prikaziEpizodu(" + e.gzjz + ", " + e.pocetak + ", " + e.najduza + ", \"" + vrsta + "\")' title='Start: " +
+                 opisVremena(e.pocetak) + "'>Show</button></td>";
+        }
+        html += red + "</tr>";
+      });
+      document.getElementById("tabela-epizoda").innerHTML = html;
+    }
+
+    // Praćenje najduže epizode izabrane lokacije u odeljku Sat po sat
+    function prikaziEpizodu(broj, pocetak, trajanje, vrsta) {
+      zaustavi();
+      pracenaEpizoda = {
+        naslov: naslovEpizode[vrsta],
+        broj: broj,
+        pocetak: pocetak,
+        kraj: pocetak + trajanje - 1,
+        trajanje: trajanje,
+        naziv: markeriSat[broj].naziv
+      };
+      document.getElementById("izbor-parametra").value = "ukupno";
+      document.getElementById("traka-epizode").style.display = "block";
+      postaviSat(pocetak);
+      document.getElementById("sat-po-sat").scrollIntoView({ behavior: "smooth" });
+    }
+
+    // Date and hour without the weekday
+    function kratakOpisVremena(indeks) {
+      const d = datumZaSat(indeks);
+      return d.getUTCDate() + " " + meseciGenitiv[d.getUTCMonth()] + " " + d.getUTCFullYear() + ", " +
+             String(d.getUTCHours()).padStart(2, "0") + ":00";
+    }
+
+    // Tekst u traci: koja epizoda, od kada do kada i gde smo trenutno
+    function osveziTrakuEpizode() {
+      if (!pracenaEpizoda) return;
+      const e = pracenaEpizoda;
+      let polozaj;
+      if (trenutniSat >= e.pocetak && trenutniSat <= e.kraj) {
+        polozaj = "Currently: <strong>hour " + ceoBroj(trenutniSat - e.pocetak + 1) + " of " + ceoBroj(e.trajanje) + "</strong>.";
+      } else {
+        polozaj = "You are currently outside this episode.";
+      }
+      document.getElementById("tekst-epizode").innerHTML =
+        e.naslov + ": <strong>" + e.naziv + "</strong>, " + ceoBroj(e.trajanje) + " h, from " +
+        kratakOpisVremena(e.pocetak) + " to " + kratakOpisVremena(e.kraj) + ". " + polozaj +
+        " The site is marked with a thick black ring.";
+    }
+
+    // Prolazak kroz epizodu od početka do kraja, uz automatsko zaustavljanje
+    function pustiEpizodu() {
+      if (!pracenaEpizoda) return;
+      zaustavi();
+      postaviSat(pracenaEpizoda.pocetak);
+      document.getElementById("dugme-pusti").textContent = "Pause";
+      tajmer = setInterval(function () {
+        if (trenutniSat >= pracenaEpizoda.kraj) {
+          zaustavi();
+          return;
+        }
+        postaviSat(trenutniSat + 1);
+      }, 200);
+    }
+
+    function zavrsiPracenje() {
+      zaustavi();
+      pracenaEpizoda = null;
+      document.getElementById("traka-epizode").style.display = "none";
+      postaviSat(trenutniSat);
+    }
+
+    izaberiVrstuEpizoda("sve");
+  </script>
+</body>
+</html>
