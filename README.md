@@ -6,7 +6,7 @@ The study uses validated hourly measurements from 27 automatic monitoring statio
 
 The framework shows what information a dense ground-based hourly network provides, and what is lost when air quality data are reduced to an annual mean or to the overall share of adverse hours.
 
-**Interactive application:** [Serbian](index.html) | [English](index_en.html)
+**Interactive application:** [Serbian](https://jelena383.github.io/belgrade-hourly-air-quality/) | [English](https://jelena383.github.io/belgrade-hourly-air-quality/index_en.html)
 
 The application is retrospective (2024–2025) and does not show current conditions. For current air quality in Serbia, see the portal of the Serbian Environmental Protection Agency: https://vazduh.sepa.gov.rs/
 
